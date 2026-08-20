@@ -89,6 +89,14 @@ export interface Inquiry {
   event_type?: string | null;
   city?: string | null;
   budget_range?: string | null;
+  // Contact details (so vendor can reach the manager)
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  contact_whatsapp?: string | null;
+  // Design upload (only for Fabrication & Event Management Agency)
+  design_url?: string | null;
+  design_filename?: string | null;
   status: InquiryStatus;
   created_at: string;
 }
@@ -132,6 +140,13 @@ export const CATEGORIES = [
   "Teleprompters",
   "Power Management",
   "Vanity Vans",
+  "Event Management Agency",
+] as const;
+
+// Categories that support design upload for quoting
+export const DESIGN_UPLOAD_CATEGORIES = [
+  "Fabrication",
+  "Event Management Agency",
 ] as const;
 
 export type City = (typeof CITIES)[number];
