@@ -33,7 +33,9 @@ export function ReviewForm({ vendorId, vendorName, onSuccess }: ReviewFormProps)
     setError(null);
 
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       setError("Please log in as an Event Manager to leave a review.");
@@ -43,7 +45,7 @@ export function ReviewForm({ vendorId, vendorName, onSuccess }: ReviewFormProps)
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, full_name")
       .eq("id", user.id)
       .single();
 
@@ -69,6 +71,18 @@ export function ReviewForm({ vendorId, vendorName, onSuccess }: ReviewFormProps)
       setLoading(false);
       return;
     }
+
+    // Fire-and-forget email notification to vendor
+    fetch("/api/notifications/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        vendorId,
+        managerName: profile?.full_name || "Event Manager",
+        rating,
+        comment: comment || null,
+      }),
+    }).catch(() => {});
 
     setSuccess(true);
     setLoading(false);
