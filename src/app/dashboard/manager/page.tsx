@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Building2, Briefcase, MapPin, Search } from "lucide-react";
+import { Building2, Briefcase, MapPin, Search, Heart } from "lucide-react";
 
 export default async function ManagerDashboardPage() {
   const supabase = await createClient();
@@ -34,6 +34,11 @@ export default async function ManagerDashboardPage() {
     .order("created_at", { ascending: false })
     .limit(10);
 
+  const { count: shortlistCount } = await supabase
+    .from("favorites")
+    .select("*", { count: "exact", head: true })
+    .eq("manager_id", user.id);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
@@ -48,10 +53,16 @@ export default async function ManagerDashboardPage() {
           </Link>
           <div className="flex items-center gap-3">
             <Link
+              href="/dashboard/manager/shortlist"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Shortlist
+            </Link>
+            <Link
               href="/explore"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              Explore Vendors
+              Explore
             </Link>
             <form action="/auth/signout" method="post">
               <Button variant="outline" size="sm" type="submit">
@@ -93,6 +104,12 @@ export default async function ManagerDashboardPage() {
             <Link href="/dashboard/manager/setup">
               <Button variant="outline" size="sm">
                 Edit Profile
+              </Button>
+            </Link>
+            <Link href="/dashboard/manager/shortlist">
+              <Button variant="outline" size="sm">
+                <Heart className="h-4 w-4" />
+                Shortlist ({shortlistCount || 0})
               </Button>
             </Link>
             <Link href="/explore">
