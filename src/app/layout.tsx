@@ -19,19 +19,34 @@ export const metadata: Metadata = {
     template: "%s | EventLink",
   },
   description:
-    "Discover top event vendors, artists & production teams across India. Weddings, corporate, concerts & more. Book trusted talent with reviews.",
+    "Discover top event vendors, artists & production teams across India. Weddings, corporate, concerts & more. Connect with trusted talent through reviews and inquiries.",
   keywords: [
     "event vendors India",
     "wedding vendors",
     "event management",
     "sound lights AV",
     "photo video anchors",
+    "fabrication decor",
     "EventLink",
   ],
+  authors: [{ name: "EventLink" }],
   openGraph: {
     type: "website",
     locale: "en_IN",
     siteName: "EventLink",
+    title: "EventLink — India's Event Vendor Marketplace",
+    description:
+      "Discover top event vendors, artists & production teams across India. Weddings, corporate, concerts & more.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EventLink — India's Event Vendor Marketplace",
+    description:
+      "Discover top event vendors, artists & production teams across India.",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
