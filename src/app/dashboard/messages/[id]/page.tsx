@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { MessageForm } from "@/components/chat/message-form";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -36,15 +36,14 @@ export default async function ConversationPage({ params }: Props) {
     `
     )
     .eq("id", id)
+    .is("deleted_at", null)
     .single();
 
   if (!conversation) notFound();
 
-  // Authz: must be participant
   const isManager = conversation.manager_id === user.id;
   const isVendor =
-    profile.role === "vendor" &&
-    conversation.vendor?.user_id === user.id;
+    profile.role === "vendor" && conversation.vendor?.user_id === user.id;
 
   if (!isManager && !isVendor) {
     redirect("/dashboard/messages");
@@ -54,15 +53,16 @@ export default async function ConversationPage({ params }: Props) {
     .from("messages")
     .select("*")
     .eq("conversation_id", id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
-  // Mark messages from the other party as read
   await supabase
     .from("messages")
     .update({ read_at: new Date().toISOString() })
     .eq("conversation_id", id)
     .neq("sender_id", user.id)
-    .is("read_at", null);
+    .is("read_at", null)
+    .is("deleted_at", null);
 
   const title = isManager
     ? conversation.vendor?.business_name || "Vendor"
@@ -71,24 +71,24 @@ export default async function ConversationPage({ params }: Props) {
       "Event Manager";
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="border-b border-border">
-        <div className="mx-auto flex h-16 max-w-3xl items-center gap-3 px-4">
+    <div className="flex h-[100dvh] flex-col bg-background">
+      <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-3 sm:h-16 sm:px-4">
           <Link
             href="/dashboard/messages"
-            className="text-muted-foreground hover:text-foreground"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <div>
-            <p className="font-semibold">{title}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold">{title}</p>
             {isManager && conversation.vendor?.primary_city && (
-              <p className="text-xs text-muted-foreground">
+              <p className="truncate text-xs text-muted-foreground">
                 {conversation.vendor.primary_city}
               </p>
             )}
             {!isManager && conversation.manager?.company_name && (
-              <p className="text-xs text-muted-foreground">
+              <p className="truncate text-xs text-muted-foreground">
                 {conversation.manager.company_name}
               </p>
             )}
@@ -96,10 +96,10 @@ export default async function ConversationPage({ params }: Props) {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
-        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-6">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col min-h-0">
+        <div className="flex-1 space-y-2 overflow-y-auto px-3 py-4 sm:space-y-3 sm:px-4 sm:py-6">
           {!messages || messages.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-12">
+            <p className="py-12 text-center text-sm text-muted-foreground">
               No messages yet. Say hello.
             </p>
           ) : (
@@ -112,17 +112,39 @@ export default async function ConversationPage({ params }: Props) {
                 >
                   <div
                     className={cn(
-                      "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm",
+                      "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm sm:max-w-[75%]",
                       mine
-                        ? "bg-accent text-accent-foreground rounded-br-md"
-                        : "bg-secondary text-foreground rounded-bl-md"
+                        ? "rounded-br-md bg-accent text-accent-foreground"
+                        : "rounded-bl-md bg-secondary text-foreground"
                     )}
                   >
-                    <p className="whitespace-pre-wrap">{msg.body}</p>
+                    {msg.body && (
+                      <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                    )}
+                    {msg.attachment_url && (
+                      <a
+                        href={msg.attachment_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                          "mt-2 flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium",
+                          mine
+                            ? "bg-black/10 hover:bg-black/15"
+                            : "bg-background/80 hover:bg-background"
+                        )}
+                      >
+                        <FileText className="h-4 w-4 shrink-0" />
+                        <span className="truncate">
+                          {msg.attachment_filename || "Attachment"}
+                        </span>
+                      </a>
+                    )}
                     <p
                       className={cn(
                         "mt-1 text-[10px]",
-                        mine ? "text-accent-foreground/70" : "text-muted-foreground"
+                        mine
+                          ? "text-accent-foreground/70"
+                          : "text-muted-foreground"
                       )}
                     >
                       {new Date(msg.created_at).toLocaleTimeString("en-IN", {
@@ -137,7 +159,9 @@ export default async function ConversationPage({ params }: Props) {
           )}
         </div>
 
-        <MessageForm conversationId={id} senderId={user.id} />
+        <div className="shrink-0">
+          <MessageForm conversationId={id} senderId={user.id} />
+        </div>
       </main>
     </div>
   );
