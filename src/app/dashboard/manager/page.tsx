@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Building2, Briefcase, MapPin, Search, Heart } from "lucide-react";
+import { StartChatButton } from "@/components/chat/start-chat-button";
+import { Building2, Briefcase, MapPin, Search, Heart, MessageSquare } from "lucide-react";
 
 export default async function ManagerDashboardPage() {
   const supabase = await createClient();
@@ -22,14 +23,15 @@ export default async function ManagerDashboardPage() {
     redirect("/dashboard");
   }
 
-  // If profile is incomplete, send to setup
   if (!profile.full_name || !profile.company_name) {
     redirect("/dashboard/manager/setup");
   }
 
   const { data: inquiries } = await supabase
     .from("inquiries")
-    .select("*, vendor:vendor_profiles(business_name, primary_city, slug, categories)")
+    .select(
+      "*, vendor:vendor_profiles(id, business_name, primary_city, slug, categories)"
+    )
     .eq("manager_id", user.id)
     .order("created_at", { ascending: false })
     .limit(10);
@@ -52,6 +54,12 @@ export default async function ManagerDashboardPage() {
             </span>
           </Link>
           <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/messages"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Messages
+            </Link>
             <Link
               href="/dashboard/manager/shortlist"
               className="text-sm text-muted-foreground hover:text-foreground"
@@ -100,10 +108,16 @@ export default async function ManagerDashboardPage() {
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link href="/dashboard/manager/setup">
               <Button variant="outline" size="sm">
                 Edit Profile
+              </Button>
+            </Link>
+            <Link href="/dashboard/messages">
+              <Button variant="outline" size="sm">
+                <MessageSquare className="h-4 w-4" />
+                Messages
               </Button>
             </Link>
             <Link href="/dashboard/manager/shortlist">
@@ -121,7 +135,6 @@ export default async function ManagerDashboardPage() {
           </div>
         </div>
 
-        {/* Recent Inquiries */}
         <section className="mt-12">
           <h2 className="text-lg font-semibold">Your Inquiries</h2>
           {!inquiries || inquiries.length === 0 ? (
@@ -142,7 +155,7 @@ export default async function ManagerDashboardPage() {
                   className="rounded-xl border border-border bg-card p-4"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium">
                         {inq.vendor?.business_name || "Vendor"}
                       </p>
@@ -155,9 +168,19 @@ export default async function ManagerDashboardPage() {
                         {new Date(inq.created_at).toLocaleDateString("en-IN")}
                       </p>
                     </div>
-                    <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium capitalize shrink-0">
-                      {inq.status}
-                    </span>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium capitalize">
+                        {inq.status}
+                      </span>
+                      {inq.vendor?.id && (
+                        <StartChatButton
+                          vendorId={inq.vendor.id}
+                          managerId={user.id}
+                          inquiryId={inq.id}
+                          label="Message"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
