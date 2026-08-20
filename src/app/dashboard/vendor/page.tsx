@@ -4,7 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { MediaUploader } from "@/components/vendor/media-uploader";
 import { StartChatButton } from "@/components/chat/start-chat-button";
-import { Star, Eye, MessageSquare, Image as ImageIcon } from "lucide-react";
+import {
+  Star,
+  Eye,
+  MessageSquare,
+  Image as ImageIcon,
+  CalendarCheck,
+} from "lucide-react";
 
 export default async function VendorDashboardPage() {
   const supabase = await createClient();
@@ -40,6 +46,13 @@ export default async function VendorDashboardPage() {
     .order("created_at", { ascending: false })
     .limit(10);
 
+  const { count: bookingCount } = await supabase
+    .from("bookings")
+    .select("*", { count: "exact", head: true })
+    .eq("vendor_id", vendor.id)
+    .eq("status", "requested")
+    .is("deleted_at", null);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
@@ -60,10 +73,10 @@ export default async function VendorDashboardPage() {
               Messages
             </Link>
             <Link
-              href="/explore"
+              href="/dashboard/vendor/bookings"
               className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline"
             >
-              Explore
+              Bookings
             </Link>
             <form action="/auth/signout" method="post">
               <Button variant="outline" size="sm" type="submit">
@@ -85,6 +98,12 @@ export default async function VendorDashboardPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href="/dashboard/vendor/bookings">
+              <Button variant="outline" size="sm">
+                <CalendarCheck className="h-4 w-4" />
+                Bookings{bookingCount ? ` (${bookingCount})` : ""}
+              </Button>
+            </Link>
             <Link href="/dashboard/messages">
               <Button variant="outline" size="sm">
                 <MessageSquare className="h-4 w-4" />
@@ -93,18 +112,6 @@ export default async function VendorDashboardPage() {
             </Link>
             <Link href="/dashboard/vendor/edit">
               <Button size="sm">Edit Profile</Button>
-            </Link>
-            <Link
-              href={`/${vendor.primary_city
-                .toLowerCase()
-                .replace(/\s+/g, "-")}/${(vendor.categories?.[0] || "general")
-                .toLowerCase()
-                .replace(/\s+/g, "-")
-                .replace(/\//g, "-")}/${vendor.slug}`}
-            >
-              <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-                Public Profile
-              </Button>
             </Link>
           </div>
         </div>
