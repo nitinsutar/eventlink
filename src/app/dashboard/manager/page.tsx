@@ -3,7 +3,15 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { StartChatButton } from "@/components/chat/start-chat-button";
-import { Building2, Briefcase, MapPin, Search, Heart, MessageSquare } from "lucide-react";
+import {
+  Building2,
+  Briefcase,
+  MapPin,
+  Search,
+  Heart,
+  MessageSquare,
+  CalendarCheck,
+} from "lucide-react";
 
 export default async function ManagerDashboardPage() {
   const supabase = await createClient();
@@ -33,6 +41,7 @@ export default async function ManagerDashboardPage() {
       "*, vendor:vendor_profiles(id, business_name, primary_city, slug, categories)"
     )
     .eq("manager_id", user.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -44,7 +53,7 @@ export default async function ManagerDashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-3 sm:h-16 sm:px-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-accent-foreground">
               E
@@ -53,7 +62,7 @@ export default async function ManagerDashboardPage() {
               Event<span className="text-accent">Link</span>
             </span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/dashboard/messages"
               className="text-sm text-muted-foreground hover:text-foreground"
@@ -61,16 +70,16 @@ export default async function ManagerDashboardPage() {
               Messages
             </Link>
             <Link
-              href="/dashboard/manager/shortlist"
-              className="text-sm text-muted-foreground hover:text-foreground"
+              href="/dashboard/manager/bookings"
+              className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline"
             >
-              Shortlist
+              Bookings
             </Link>
             <Link
-              href="/explore"
-              className="text-sm text-muted-foreground hover:text-foreground"
+              href="/dashboard/manager/shortlist"
+              className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline"
             >
-              Explore
+              Shortlist
             </Link>
             <form action="/auth/signout" method="post">
               <Button variant="outline" size="sm" type="submit">
@@ -81,10 +90,10 @@ export default async function ManagerDashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-10">
+      <main className="mx-auto max-w-5xl px-3 py-8 sm:px-4 sm:py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
               {profile.full_name}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -109,9 +118,10 @@ export default async function ManagerDashboardPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/dashboard/manager/setup">
+            <Link href="/dashboard/manager/bookings">
               <Button variant="outline" size="sm">
-                Edit Profile
+                <CalendarCheck className="h-4 w-4" />
+                Bookings
               </Button>
             </Link>
             <Link href="/dashboard/messages">
@@ -135,7 +145,7 @@ export default async function ManagerDashboardPage() {
           </div>
         </div>
 
-        <section className="mt-12">
+        <section className="mt-10 sm:mt-12">
           <h2 className="text-lg font-semibold">Your Inquiries</h2>
           {!inquiries || inquiries.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-dashed border-border py-12 text-center">
@@ -152,9 +162,9 @@ export default async function ManagerDashboardPage() {
               {inquiries.map((inq: any) => (
                 <div
                   key={inq.id}
-                  className="rounded-xl border border-border bg-card p-4"
+                  className="rounded-xl border border-border bg-card p-3.5 sm:p-4"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">
                         {inq.vendor?.business_name || "Vendor"}
@@ -168,7 +178,7 @@ export default async function ManagerDashboardPage() {
                         {new Date(inq.created_at).toLocaleDateString("en-IN")}
                       </p>
                     </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
+                    <div className="flex items-center gap-2 sm:flex-col sm:items-end">
                       <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium capitalize">
                         {inq.status}
                       </span>
