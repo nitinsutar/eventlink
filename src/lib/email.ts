@@ -1,8 +1,16 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    throw new Error("RESEND_API_KEY is not set");
+  }
+  return new Resend(key);
+}
 
-const FROM = process.env.RESEND_FROM_EMAIL || "EventLink <onboarding@resend.dev>";
+function getFrom() {
+  return process.env.RESEND_FROM_EMAIL || "EventLink <onboarding@resend.dev>";
+}
 
 export async function sendInquiryNotification(params: {
   to: string;
@@ -42,8 +50,9 @@ export async function sendInquiryNotification(params: {
     </div>
   `;
 
+  const resend = getResend();
   return resend.emails.send({
-    from: FROM,
+    from: getFrom(),
     to,
     subject,
     html,
@@ -79,8 +88,9 @@ export async function sendReviewNotification(params: {
     </div>
   `;
 
+  const resend = getResend();
   return resend.emails.send({
-    from: FROM,
+    from: getFrom(),
     to,
     subject,
     html,
