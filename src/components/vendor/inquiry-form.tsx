@@ -30,13 +30,11 @@ export function InquiryForm({
   const [city, setCity] = useState("");
   const [budget, setBudget] = useState("");
 
-  // Contact details
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactWhatsapp, setContactWhatsapp] = useState("");
 
-  // Design upload (Fabrication + Event Management Agency only)
   const [designFile, setDesignFile] = useState<File | null>(null);
   const designInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +61,6 @@ export function InquiryForm({
     let designUrl: string | null = null;
     let designFilename: string | null = null;
 
-    // Upload design if provided
     if (designFile && supportsDesignUpload) {
       const ext = designFile.name.split(".").pop();
       const path = `designs/${user.id}/${Date.now()}.${ext}`;
@@ -109,6 +106,21 @@ export function InquiryForm({
       return;
     }
 
+    // Fire-and-forget email notification to vendor
+    fetch("/api/notifications/inquiry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        vendorId,
+        managerName: contactName || "Event Manager",
+        message,
+        eventType: eventType || null,
+        city: city || null,
+        contactPhone: contactPhone || null,
+        contactEmail: contactEmail || null,
+      }),
+    }).catch(() => {});
+
     setSuccess(true);
     setLoading(false);
   };
@@ -139,7 +151,6 @@ export function InquiryForm({
     >
       <h3 className="font-semibold">Send Inquiry to {vendorName}</h3>
 
-      {/* Contact Details */}
       <div className="space-y-3 rounded-xl bg-secondary/40 p-4">
         <p className="text-sm font-medium">Your contact details</p>
         <p className="text-xs text-muted-foreground">
@@ -193,7 +204,6 @@ export function InquiryForm({
         </div>
       </div>
 
-      {/* Message */}
       <div className="space-y-2">
         <Label htmlFor="message">Message *</Label>
         <textarea
@@ -249,7 +259,6 @@ export function InquiryForm({
         </div>
       </div>
 
-      {/* Design Upload - only for Fabrication & Event Management Agency */}
       {supportsDesignUpload && (
         <div className="space-y-2">
           <Label>Upload Design / Drawing (optional)</Label>
