@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { MessageForm } from "@/components/chat/message-form";
+import { ChatBookingPanel } from "@/components/chat/chat-booking-panel";
 import { ArrowLeft, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -95,6 +96,16 @@ export default async function ConversationPage({ params }: Props) {
           </div>
         </div>
       </header>
+
+      {conversation.vendor && (
+        <ChatBookingPanel
+          vendorId={conversation.vendor.id}
+          vendorName={conversation.vendor.business_name || "Vendor"}
+          managerId={conversation.manager_id}
+          conversationId={id}
+          isManager={isManager}
+        />
+      )}
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col min-h-0">
         <div className="flex-1 space-y-2 overflow-y-auto px-3 py-4 sm:space-y-3 sm:px-4 sm:py-6">
