@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Search, Star, MapPin, Shield, ArrowRight, Sparkles } from "lucide-react";
 import { CITIES, CATEGORIES } from "@/types/database";
+import { Footer } from "@/components/layout/footer";
 
 export default function HomePage() {
   return (
@@ -21,7 +22,7 @@ export default function HomePage() {
             <Link href="/explore" className="text-sm font-medium text-muted-foreground transition hover:text-foreground">
               Explore
             </Link>
-            <Link href="/for-vendors" className="text-sm font-medium text-muted-foreground transition hover:text-foreground">
+            <Link href="/signup?role=vendor" className="text-sm font-medium text-muted-foreground transition hover:text-foreground">
               For Vendors
             </Link>
           </nav>
@@ -59,44 +60,18 @@ export default function HomePage() {
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <div className="relative flex-1 max-w-md">
-                <MapPin className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                <select
-                  className="h-12 w-full appearance-none rounded-xl border border-border bg-card pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Select city
-                  </option>
-                  {CITIES.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                <select
-                  className="h-12 w-full appearance-none rounded-xl border border-border bg-card pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Category
-                  </option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <Link
                 href="/explore"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-accent px-8 text-sm font-semibold text-accent-foreground transition hover:bg-accent/90"
               >
-                Find Talent
+                Explore Vendors
                 <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/signup?role=vendor"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-card px-8 text-sm font-semibold transition hover:border-accent/40"
+              >
+                Join as Vendor
               </Link>
             </div>
           </div>
@@ -159,24 +134,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/30">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-accent-foreground">
-                E
-              </div>
-              <span className="font-semibold">
-                Event<span className="text-accent">Link</span>
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} EventLink. Built for the Indian event industry.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
