@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatINR } from "@/lib/utils";
 import { Star, MapPin, Shield, ArrowLeft } from "lucide-react";
 import { InquiryForm } from "@/components/vendor/inquiry-form";
+import { ReviewForm } from "@/components/vendor/review-form";
+import { ReviewsList } from "@/components/vendor/reviews-list";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,12 @@ export default async function VendorPublicProfilePage({ params }: Props) {
     .select("*")
     .eq("vendor_id", vendor.id)
     .order("sort_order", { ascending: true });
+
+  const { data: reviews } = await supabase
+    .from("reviews")
+    .select("*, manager:profiles(full_name)")
+    .eq("vendor_id", vendor.id)
+    .order("created_at", { ascending: false });
 
   // Increment view count (non-blocking)
   supabase
@@ -118,7 +126,7 @@ export default async function VendorPublicProfilePage({ params }: Props) {
                 </div>
               </div>
 
-              <div className="w-full lg:w-80">
+              <div className="w-full space-y-4 lg:w-80">
                 <InquiryForm
                   vendorId={vendor.id}
                   vendorName={vendor.business_name}
@@ -200,6 +208,21 @@ export default async function VendorPublicProfilePage({ params }: Props) {
                 </div>
               </div>
             )}
+
+            {/* Reviews */}
+            <div className="mt-10">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold">Reviews</h2>
+                <ReviewForm vendorId={vendor.id} vendorName={vendor.business_name} />
+              </div>
+              <div className="mt-6">
+                <ReviewsList
+                  reviews={reviews || []}
+                  averageRating={vendor.average_rating}
+                  reviewCount={vendor.review_count}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </main>
