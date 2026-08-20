@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Send, Upload, FileText, X } from "lucide-react";
+import { Loader2, Send, Upload, FileText, X, MessageSquare } from "lucide-react";
 import { DESIGN_UPLOAD_CATEGORIES } from "@/types/database";
 
 interface InquiryFormProps {
@@ -22,6 +23,7 @@ export function InquiryForm({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [message, setMessage] = useState("");
@@ -83,22 +85,26 @@ export function InquiryForm({
       designFilename = designFile.name;
     }
 
-    const { error: insertError } = await supabase.from("inquiries").insert({
-      vendor_id: vendorId,
-      manager_id: user.id,
-      message,
-      event_type: eventType || null,
-      event_date: eventDate || null,
-      city: city || null,
-      budget_range: budget || null,
-      contact_name: contactName || null,
-      contact_phone: contactPhone || null,
-      contact_email: contactEmail || null,
-      contact_whatsapp: contactWhatsapp || contactPhone || null,
-      design_url: designUrl,
-      design_filename: designFilename,
-      status: "pending",
-    });
+    const { data: inquiry, error: insertError } = await supabase
+      .from("inquiries")
+      .insert({
+        vendor_id: vendorId,
+        manager_id: user.id,
+        message,
+        event_type: eventType || null,
+        event_date: eventDate || null,
+        city: city || null,
+        budget_range: budget || null,
+        contact_name: contactName || null,
+        contact_phone: contactPhone || null,
+        contact_email: contactEmail || null,
+        contact_whatsapp: contactWhatsapp || contactPhone || null,
+        design_url: designUrl,
+        design_filename: designFilename,
+        status: "pending",
+      })
+      .select("id")
+      .single();
 
     if (insertError) {
       setError(insertError.message);
@@ -106,7 +112,60 @@ export function InquiryForm({
       return;
     }
 
-    // Fire-and-forget email notification to vendor
+    // Auto-create conversation + seed inquiry as first message
+    let convId: string | null = null;
+    const { data: existing } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("vendor_id", vendorId)
+      .eq("manager_id", user.id)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (existing) {
+      convId = existing.id;
+    } else {
+      const { data: created } = await supabase
+        .from("conversations")
+        .insert({
+          vendor_id: vendorId,
+          manager_id: user.id,
+          inquiry_id: inquiry?.id || null,
+        })
+        .select("id")
+        .single();
+      convId = created?.id || null;
+    }
+
+    if (convId) {
+      const details = [
+        message,
+        eventType ? `Event: ${eventType}` : null,
+        eventDate ? `Date: ${eventDate}` : null,
+        city ? `City: ${city}` : null,
+        budget ? `Budget: ${budget}` : null,
+        contactPhone ? `Phone: ${contactPhone}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      await supabase.from("messages").insert({
+        conversation_id: convId,
+        sender_id: user.id,
+        body: details,
+        attachment_url: designUrl,
+        attachment_filename: designFilename,
+        attachment_type: designUrl ? "design" : null,
+      });
+
+      await supabase
+        .from("conversations")
+        .update({ last_message_at: new Date().toISOString() })
+        .eq("id", convId);
+
+      setConversationId(convId);
+    }
+
     fetch("/api/notifications/inquiry", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -127,11 +186,19 @@ export function InquiryForm({
 
   if (success) {
     return (
-      <div className="rounded-2xl border border-accent/30 bg-accent/5 p-6 text-center">
+      <div className="rounded-2xl border border-accent/30 bg-accent/5 p-6 text-center space-y-3">
         <p className="font-medium text-accent">Inquiry sent!</p>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {vendorName} will get back to you soon.
         </p>
+        {conversationId && (
+          <Link href={`/dashboard/messages/${conversationId}`}>
+            <Button size="sm" className="mt-2">
+              <MessageSquare className="h-4 w-4" />
+              Open chat
+            </Button>
+          </Link>
+        )}
       </div>
     );
   }
@@ -147,11 +214,11 @@ export function InquiryForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-2xl border border-border bg-card p-5"
+      className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5"
     >
       <h3 className="font-semibold">Send Inquiry to {vendorName}</h3>
 
-      <div className="space-y-3 rounded-xl bg-secondary/40 p-4">
+      <div className="space-y-3 rounded-xl bg-secondary/40 p-3 sm:p-4">
         <p className="text-sm font-medium">Your contact details</p>
         <p className="text-xs text-muted-foreground">
           So the vendor can reach you directly
@@ -168,7 +235,7 @@ export function InquiryForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="contactPhone">Phone *</Label>
             <Input
@@ -217,7 +284,7 @@ export function InquiryForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="eventType">Event type</Label>
           <Input
@@ -238,7 +305,7 @@ export function InquiryForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="city">City</Label>
           <Input
@@ -277,14 +344,14 @@ export function InquiryForm({
             </button>
           ) : (
             <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/30 px-4 py-3">
-              <div className="flex items-center gap-2 text-sm">
-                <FileText className="h-4 w-4 text-accent" />
-                <span className="truncate max-w-[180px]">{designFile.name}</span>
+              <div className="flex items-center gap-2 text-sm min-w-0">
+                <FileText className="h-4 w-4 text-accent shrink-0" />
+                <span className="truncate">{designFile.name}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setDesignFile(null)}
-                className="rounded-full p-1 hover:bg-secondary"
+                className="rounded-full p-1 hover:bg-secondary shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -306,8 +373,8 @@ export function InquiryForm({
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
           Cancel
         </Button>
         <Button type="submit" disabled={loading} className="flex-1">
