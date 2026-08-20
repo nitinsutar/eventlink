@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { formatINR } from "@/lib/utils";
 import { Star, MapPin, Shield, ArrowLeft } from "lucide-react";
@@ -12,6 +14,37 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ city: string; category: string; slug: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data: vendor } = await supabase
+    .from("vendor_profiles")
+    .select("business_name, primary_city, categories, bio")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .single();
+
+  if (!vendor) {
+    return { title: "Vendor not found" };
+  }
+
+  const cats = (vendor.categories || []).slice(0, 3).join(", ");
+  const title = `${vendor.business_name} — ${vendor.primary_city}`;
+  const description =
+    vendor.bio?.slice(0, 155) ||
+    `${vendor.business_name} in ${vendor.primary_city}. Categories: ${cats}. Book via EventLink.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+    },
+  };
 }
 
 export default async function VendorPublicProfilePage({ params }: Props) {
@@ -41,12 +74,13 @@ export default async function VendorPublicProfilePage({ params }: Props) {
     .eq("vendor_id", vendor.id)
     .order("created_at", { ascending: false });
 
-  // Increment view count (non-blocking)
   supabase
     .from("vendor_profiles")
     .update({ view_count: (vendor.view_count || 0) + 1 })
     .eq("id", vendor.id)
     .then(() => {});
+
+  const coverUrl = vendor.cover_image_url || media?.[0]?.url || null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,14 +106,15 @@ export default async function VendorPublicProfilePage({ params }: Props) {
 
       <main className="mx-auto max-w-5xl px-4 py-10">
         <div className="overflow-hidden rounded-3xl border border-border bg-card">
-          {/* Cover */}
           <div className="relative aspect-[21/9] bg-secondary/40">
-            {vendor.cover_image_url || (media && media[0]) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={vendor.cover_image_url || media![0].url}
+            {coverUrl ? (
+              <Image
+                src={coverUrl}
                 alt={vendor.business_name}
-                className="h-full w-full object-cover"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 1024px"
+                className="object-cover"
               />
             ) : (
               <div className="flex h-full items-center justify-center">
@@ -139,7 +174,6 @@ export default async function VendorPublicProfilePage({ params }: Props) {
               </div>
             </div>
 
-            {/* About */}
             {vendor.bio && (
               <div className="mt-10">
                 <h2 className="text-lg font-semibold">About</h2>
@@ -149,7 +183,6 @@ export default async function VendorPublicProfilePage({ params }: Props) {
               </div>
             )}
 
-            {/* Stats */}
             <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {vendor.years_experience && (
                 <div className="rounded-xl bg-secondary/50 p-4 text-center">
@@ -173,7 +206,6 @@ export default async function VendorPublicProfilePage({ params }: Props) {
               </div>
             </div>
 
-            {/* Portfolio Gallery */}
             {media && media.length > 0 && (
               <div className="mt-10">
                 <h2 className="text-lg font-semibold">Portfolio</h2>
@@ -181,13 +213,14 @@ export default async function VendorPublicProfilePage({ params }: Props) {
                   {media.map((item) => (
                     <div
                       key={item.id}
-                      className="aspect-square overflow-hidden rounded-xl border border-border"
+                      className="relative aspect-square overflow-hidden rounded-xl border border-border"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={item.url}
                         alt={item.caption || vendor.business_name}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="(max-width: 640px) 50vw, 33vw"
+                        className="object-cover"
                       />
                     </div>
                   ))}
@@ -195,7 +228,6 @@ export default async function VendorPublicProfilePage({ params }: Props) {
               </div>
             )}
 
-            {/* Packages */}
             {vendor.packages && vendor.packages.length > 0 && (
               <div className="mt-10">
                 <h2 className="text-lg font-semibold">Packages</h2>
@@ -213,7 +245,6 @@ export default async function VendorPublicProfilePage({ params }: Props) {
               </div>
             )}
 
-            {/* Reviews */}
             <div className="mt-10">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold">Reviews</h2>
