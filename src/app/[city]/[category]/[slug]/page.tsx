@@ -6,6 +6,7 @@ import { Star, MapPin, Shield, ArrowLeft } from "lucide-react";
 import { InquiryForm } from "@/components/vendor/inquiry-form";
 import { ReviewForm } from "@/components/vendor/review-form";
 import { ReviewsList } from "@/components/vendor/reviews-list";
+import { FavoriteButton } from "@/components/manager/favorite-button";
 
 export const dynamic = "force-dynamic";
 
@@ -72,7 +73,7 @@ export default async function VendorPublicProfilePage({ params }: Props) {
       <main className="mx-auto max-w-5xl px-4 py-10">
         <div className="overflow-hidden rounded-3xl border border-border bg-card">
           {/* Cover */}
-          <div className="aspect-[21/9] bg-secondary/40">
+          <div className="relative aspect-[21/9] bg-secondary/40">
             {vendor.cover_image_url || (media && media[0]) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -87,6 +88,9 @@ export default async function VendorPublicProfilePage({ params }: Props) {
                 </span>
               </div>
             )}
+            <div className="absolute right-4 top-4">
+              <FavoriteButton vendorId={vendor.id} />
+            </div>
           </div>
 
           <div className="p-6 sm:p-8">
