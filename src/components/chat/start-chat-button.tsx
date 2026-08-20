@@ -12,7 +12,7 @@ interface StartChatButtonProps {
   inquiryId?: string;
   initialMessage?: string;
   label?: string;
-  variant?: "default" | "outline" | "secondary";
+  variant?: "default" | "outline" | "accent" | "ghost";
   size?: "default" | "sm" | "lg";
 }
 
@@ -32,7 +32,6 @@ export function StartChatButton({
     setLoading(true);
     const supabase = createClient();
 
-    // Find or create conversation
     const { data: existing } = await supabase
       .from("conversations")
       .select("id")
@@ -59,7 +58,6 @@ export function StartChatButton({
       }
       conversationId = created.id;
 
-      // Seed first message from inquiry if provided
       if (initialMessage) {
         await supabase.from("messages").insert({
           conversation_id: conversationId,
