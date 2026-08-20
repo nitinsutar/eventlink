@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
@@ -12,6 +13,7 @@ interface MediaUploaderProps {
 }
 
 export function MediaUploader({ vendorId, onUploadComplete }: MediaUploaderProps) {
+  const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<{ file: File; url: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,9 @@ export function MediaUploader({ vendorId, onUploadComplete }: MediaUploaderProps
     setError(null);
 
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setError("Not authenticated");
       setUploading(false);
@@ -49,6 +53,16 @@ export function MediaUploader({ vendorId, onUploadComplete }: MediaUploaderProps
     }
 
     try {
+      // Check if vendor already has a cover
+      const { data: existingCover } = await supabase
+        .from("media")
+        .select("id")
+        .eq("vendor_id", vendorId)
+        .eq("is_cover", true)
+        .maybeSingle();
+
+      let firstUploadedUrl: string | null = null;
+
       for (let i = 0; i < previews.length; i++) {
         const { file } = previews[i];
         const ext = file.name.split(".").pop();
@@ -60,21 +74,39 @@ export function MediaUploader({ vendorId, onUploadComplete }: MediaUploaderProps
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("portfolio")
-          .getPublicUrl(path);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("portfolio").getPublicUrl(path);
+
+        const isCover = !existingCover && i === 0;
 
         await supabase.from("media").insert({
           vendor_id: vendorId,
           type: "image",
           url: publicUrl,
           sort_order: i,
-          is_cover: i === 0,
+          is_cover: isCover,
         });
+
+        if (isCover) {
+          firstUploadedUrl = publicUrl;
+        }
+      }
+
+      // Set cover_image_url on vendor profile so Explore cards show it
+      if (firstUploadedUrl) {
+        await supabase
+          .from("vendor_profiles")
+          .update({
+            cover_image_url: firstUploadedUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", vendorId);
       }
 
       setPreviews([]);
       onUploadComplete?.();
+      router.refresh();
     } catch (err: any) {
       setError(err.message || "Upload failed");
     } finally {
