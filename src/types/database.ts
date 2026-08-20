@@ -12,6 +12,9 @@ export interface Profile {
   full_name: string | null;
   phone: string | null;
   avatar_url: string | null;
+  company_name?: string | null;
+  designation?: string | null;
+  city?: string | null;
   created_at: string;
   updated_at?: string;
 }
@@ -23,7 +26,7 @@ export interface VendorProfile {
   slug: string;
   primary_city: string;
   serviceable_cities: string[];
-  categories: string[]; // multi-select
+  categories: string[];
   bio: string | null;
   years_experience: number | null;
   team_size: number | null;
@@ -89,12 +92,10 @@ export interface Inquiry {
   event_type?: string | null;
   city?: string | null;
   budget_range?: string | null;
-  // Contact details (so vendor can reach the manager)
   contact_name?: string | null;
   contact_phone?: string | null;
   contact_email?: string | null;
   contact_whatsapp?: string | null;
-  // Design upload (only for Fabrication & Event Management Agency)
   design_url?: string | null;
   design_filename?: string | null;
   status: InquiryStatus;
@@ -107,7 +108,26 @@ export interface Favorite {
   created_at: string;
 }
 
-// Constants
+export interface Conversation {
+  id: string;
+  vendor_id: string;
+  manager_id: string;
+  inquiry_id?: string | null;
+  last_message_at: string;
+  created_at: string;
+  vendor?: VendorProfile;
+  manager?: Profile;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  read_at?: string | null;
+  created_at: string;
+}
+
 export const CITIES = [
   "Mumbai",
   "Delhi NCR",
@@ -143,7 +163,6 @@ export const CATEGORIES = [
   "Event Management Agency",
 ] as const;
 
-// Categories that support design upload for quoting
 export const DESIGN_UPLOAD_CATEGORIES = [
   "Fabrication",
   "Event Management Agency",
