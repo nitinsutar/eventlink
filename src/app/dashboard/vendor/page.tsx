@@ -3,11 +3,14 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { MediaUploader } from "@/components/vendor/media-uploader";
+import { StartChatButton } from "@/components/chat/start-chat-button";
 import { Star, Eye, MessageSquare, Image as ImageIcon } from "lucide-react";
 
 export default async function VendorDashboardPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
 
@@ -32,7 +35,7 @@ export default async function VendorDashboardPage() {
     .select("*")
     .eq("vendor_id", vendor.id)
     .order("created_at", { ascending: false })
-    .limit(5);
+    .limit(10);
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,7 +50,16 @@ export default async function VendorDashboardPage() {
             </span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/explore" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link
+              href="/dashboard/messages"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Messages
+            </Link>
+            <Link
+              href="/explore"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               Explore
             </Link>
             <form action="/auth/signout" method="post">
@@ -62,17 +74,34 @@ export default async function VendorDashboardPage() {
       <main className="mx-auto max-w-5xl px-4 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{vendor.business_name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {vendor.business_name}
+            </h1>
             <p className="mt-1 text-muted-foreground">
               {vendor.primary_city} · {vendor.categories?.slice(0, 3).join(", ")}
             </p>
           </div>
           <div className="flex gap-2">
+            <Link href="/dashboard/messages">
+              <Button variant="outline" size="sm">
+                <MessageSquare className="h-4 w-4" />
+                Messages
+              </Button>
+            </Link>
             <Link href="/dashboard/vendor/edit">
               <Button size="sm">Edit Profile</Button>
             </Link>
-            <Link href={`/${vendor.primary_city.toLowerCase().replace(/\s+/g, "-")}/${(vendor.categories?.[0] || "general").toLowerCase().replace(/\s+/g, "-").replace(/\//g, "-")}/${vendor.slug}`}>
-              <Button variant="outline" size="sm">View Public Profile</Button>
+            <Link
+              href={`/${vendor.primary_city
+                .toLowerCase()
+                .replace(/\s+/g, "-")}/${(vendor.categories?.[0] || "general")
+                .toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace(/\//g, "-")}/${vendor.slug}`}
+            >
+              <Button variant="outline" size="sm">
+                View Public Profile
+              </Button>
             </Link>
           </div>
         </div>
@@ -82,7 +111,9 @@ export default async function VendorDashboardPage() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Star className="h-4 w-4" /> Profile Score
             </div>
-            <p className="mt-2 text-3xl font-bold">{vendor.profile_completion_score}%</p>
+            <p className="mt-2 text-3xl font-bold">
+              {vendor.profile_completion_score}%
+            </p>
           </div>
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -107,7 +138,8 @@ export default async function VendorDashboardPage() {
         <section className="mt-12">
           <h2 className="text-lg font-semibold">Portfolio</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Upload high-quality photos of your work. First image becomes the cover.
+            Upload high-quality photos of your work. First image becomes the
+            cover.
           </p>
 
           <div className="mt-6">
@@ -117,7 +149,10 @@ export default async function VendorDashboardPage() {
           {media && media.length > 0 && (
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {media.map((item) => (
-                <div key={item.id} className="group relative aspect-square overflow-hidden rounded-xl border border-border">
+                <div
+                  key={item.id}
+                  className="group relative aspect-square overflow-hidden rounded-xl border border-border"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.url}
@@ -139,7 +174,8 @@ export default async function VendorDashboardPage() {
           <h2 className="text-lg font-semibold">Recent Inquiries</h2>
           {!inquiries || inquiries.length === 0 ? (
             <p className="mt-4 text-sm text-muted-foreground">
-              No inquiries yet. Share your public profile to start receiving leads.
+              No inquiries yet. Share your public profile to start receiving
+              leads.
             </p>
           ) : (
             <div className="mt-4 space-y-3">
@@ -149,17 +185,42 @@ export default async function VendorDashboardPage() {
                   className="rounded-xl border border-border bg-card p-4"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm">{inq.message}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">
+                        {inq.contact_name || "Event Manager"}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {inq.message}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {inq.contact_phone && `${inq.contact_phone} · `}
                         {inq.event_type && `${inq.event_type} · `}
                         {inq.city && `${inq.city} · `}
                         {new Date(inq.created_at).toLocaleDateString("en-IN")}
                       </p>
+                      {inq.design_url && (
+                        <a
+                          href={inq.design_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block text-xs font-medium text-accent hover:underline"
+                        >
+                          View design →
+                        </a>
+                      )}
                     </div>
-                    <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium capitalize">
-                      {inq.status}
-                    </span>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium capitalize">
+                        {inq.status}
+                      </span>
+                      <StartChatButton
+                        vendorId={vendor.id}
+                        managerId={inq.manager_id}
+                        inquiryId={inq.id}
+                        initialMessage={inq.message}
+                        label="Reply"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
