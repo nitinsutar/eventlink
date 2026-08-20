@@ -3,8 +3,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { MessageForm } from "@/components/chat/message-form";
 import { ChatBookingPanel } from "@/components/chat/chat-booking-panel";
-import { ArrowLeft, FileText } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ChatMessages } from "@/components/chat/chat-messages";
+import { ArrowLeft } from "lucide-react";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -73,7 +73,7 @@ export default async function ConversationPage({ params }: Props) {
 
   return (
     <div className="flex h-[100dvh] flex-col bg-background">
-      <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur">
+      <header className="safe-area-top shrink-0 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-3 sm:h-16 sm:px-4">
           <Link
             href="/dashboard/messages"
@@ -109,65 +109,7 @@ export default async function ConversationPage({ params }: Props) {
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col min-h-0">
         <div className="flex-1 space-y-2 overflow-y-auto px-3 py-4 sm:space-y-3 sm:px-4 sm:py-6">
-          {!messages || messages.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">
-              No messages yet. Say hello.
-            </p>
-          ) : (
-            messages.map((msg) => {
-              const mine = msg.sender_id === user.id;
-              return (
-                <div
-                  key={msg.id}
-                  className={cn("flex", mine ? "justify-end" : "justify-start")}
-                >
-                  <div
-                    className={cn(
-                      "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm sm:max-w-[75%]",
-                      mine
-                        ? "rounded-br-md bg-accent text-accent-foreground"
-                        : "rounded-bl-md bg-secondary text-foreground"
-                    )}
-                  >
-                    {msg.body && (
-                      <p className="whitespace-pre-wrap break-words">{msg.body}</p>
-                    )}
-                    {msg.attachment_url && (
-                      <a
-                        href={msg.attachment_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={cn(
-                          "mt-2 flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium",
-                          mine
-                            ? "bg-black/10 hover:bg-black/15"
-                            : "bg-background/80 hover:bg-background"
-                        )}
-                      >
-                        <FileText className="h-4 w-4 shrink-0" />
-                        <span className="truncate">
-                          {msg.attachment_filename || "Attachment"}
-                        </span>
-                      </a>
-                    )}
-                    <p
-                      className={cn(
-                        "mt-1 text-[10px]",
-                        mine
-                          ? "text-accent-foreground/70"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {new Date(msg.created_at).toLocaleTimeString("en-IN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                </div>
-              );
-            })
-          )}
+          <ChatMessages messages={messages || []} currentUserId={user.id} />
         </div>
 
         <div className="shrink-0">
