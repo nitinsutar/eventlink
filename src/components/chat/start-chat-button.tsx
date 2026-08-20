@@ -29,70 +29,81 @@ export function StartChatButton({
 }: StartChatButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleClick = async () => {
     setLoading(true);
+    setError(null);
     const supabase = createClient();
 
-    const { data: existing } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("vendor_id", vendorId)
-      .eq("manager_id", managerId)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    let conversationId = existing?.id;
-
-    if (!conversationId) {
-      const { data: created, error } = await supabase
+    try {
+      const { data: existing } = await supabase
         .from("conversations")
-        .insert({
-          vendor_id: vendorId,
-          manager_id: managerId,
-          inquiry_id: inquiryId || null,
-        })
         .select("id")
-        .single();
+        .eq("vendor_id", vendorId)
+        .eq("manager_id", managerId)
+        .is("deleted_at", null)
+        .maybeSingle();
 
-      if (error || !created) {
-        setLoading(false);
-        return;
-      }
-      conversationId = created.id;
+      let conversationId = existing?.id;
 
-      if (initialMessage) {
-        await supabase.from("messages").insert({
-          conversation_id: conversationId,
-          sender_id: managerId,
-          body: initialMessage,
-        });
-        await supabase
+      if (!conversationId) {
+        const { data: created, error: createError } = await supabase
           .from("conversations")
-          .update({ last_message_at: new Date().toISOString() })
-          .eq("id", conversationId);
-      }
-    }
+          .insert({
+            vendor_id: vendorId,
+            manager_id: managerId,
+            inquiry_id: inquiryId || null,
+          })
+          .select("id")
+          .single();
 
-    router.push(`/dashboard/messages/${conversationId}`);
+        if (createError || !created) {
+          setError("Could not start chat. Try again.");
+          setLoading(false);
+          return;
+        }
+        conversationId = created.id;
+
+        if (initialMessage) {
+          await supabase.from("messages").insert({
+            conversation_id: conversationId,
+            sender_id: managerId,
+            body: initialMessage,
+          });
+          await supabase
+            .from("conversations")
+            .update({ last_message_at: new Date().toISOString() })
+            .eq("id", conversationId);
+        }
+      }
+
+      router.push(`/dashboard/messages/${conversationId}`);
+    } catch {
+      setError("Something went wrong");
+      setLoading(false);
+    }
   };
 
   return (
-    <Button
-      variant={variant}
-      size={size}
-      onClick={handleClick}
-      disabled={loading}
-      className={className}
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <>
-          <MessageSquare className="h-3.5 w-3.5" />
-          <span className="hidden xs:inline sm:inline">{label}</span>
-        </>
-      )}
-    </Button>
+    <div className="flex flex-col items-stretch gap-1">
+      <Button
+        variant={variant}
+        size={size}
+        onClick={handleClick}
+        disabled={loading}
+        className={className}
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <>
+            <MessageSquare className="h-3.5 w-3.5" />
+            {label}
+          </>
+        )}
+      </Button>
+      {error && <p className="text-[11px] text-destructive">{error}</p>}
+    </div>
   );
 }
