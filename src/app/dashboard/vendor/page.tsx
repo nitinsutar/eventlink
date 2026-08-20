@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { MediaUploader } from "@/components/vendor/media-uploader";
+import { MediaItem } from "@/components/vendor/media-item";
 import { StartChatButton } from "@/components/chat/start-chat-button";
 import {
   Star,
@@ -154,7 +155,7 @@ export default async function VendorDashboardPage() {
         <section className="mt-10 sm:mt-12">
           <h2 className="text-lg font-semibold">Portfolio</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            First image becomes the cover on Explore.
+            First image becomes the cover. Tap trash to remove (recoverable).
           </p>
           <div className="mt-4 sm:mt-6">
             <MediaUploader vendorId={vendor.id} />
@@ -162,22 +163,14 @@ export default async function VendorDashboardPage() {
           {media && media.length > 0 && (
             <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-8 sm:grid-cols-3 sm:gap-3 md:grid-cols-4">
               {media.map((item) => (
-                <div
+                <MediaItem
                   key={item.id}
-                  className="relative aspect-square overflow-hidden rounded-xl border border-border"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={item.url}
-                    alt={item.caption || ""}
-                    className="h-full w-full object-cover"
-                  />
-                  {item.is_cover && (
-                    <span className="absolute left-2 top-2 rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
-                      Cover
-                    </span>
-                  )}
-                </div>
+                  id={item.id}
+                  url={item.url}
+                  caption={item.caption}
+                  isCover={item.is_cover}
+                  vendorId={vendor.id}
+                />
               ))}
             </div>
           )}
@@ -186,9 +179,11 @@ export default async function VendorDashboardPage() {
         <section className="mt-10 sm:mt-12">
           <h2 className="text-lg font-semibold">Recent Inquiries</h2>
           {!inquiries || inquiries.length === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">
-              No inquiries yet. Share your public profile to get leads.
-            </p>
+            <div className="mt-6 rounded-2xl border border-dashed border-border py-10 text-center">
+              <p className="text-sm text-muted-foreground">
+                No inquiries yet. Share your public profile to get leads.
+              </p>
+            </div>
           ) : (
             <div className="mt-4 space-y-3">
               {inquiries.map((inq) => (
