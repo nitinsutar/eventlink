@@ -14,6 +14,7 @@ interface StartChatButtonProps {
   label?: string;
   variant?: "default" | "outline" | "accent" | "ghost";
   size?: "default" | "sm" | "lg";
+  className?: string;
 }
 
 export function StartChatButton({
@@ -24,6 +25,7 @@ export function StartChatButton({
   label = "Message",
   variant = "outline",
   size = "sm",
+  className,
 }: StartChatButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -37,6 +39,7 @@ export function StartChatButton({
       .select("id")
       .eq("vendor_id", vendorId)
       .eq("manager_id", managerId)
+      .is("deleted_at", null)
       .maybeSingle();
 
     let conversationId = existing?.id;
@@ -64,6 +67,10 @@ export function StartChatButton({
           sender_id: managerId,
           body: initialMessage,
         });
+        await supabase
+          .from("conversations")
+          .update({ last_message_at: new Date().toISOString() })
+          .eq("id", conversationId);
       }
     }
 
@@ -71,13 +78,19 @@ export function StartChatButton({
   };
 
   return (
-    <Button variant={variant} size={size} onClick={handleClick} disabled={loading}>
+    <Button
+      variant={variant}
+      size={size}
+      onClick={handleClick}
+      disabled={loading}
+      className={className}
+    >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <>
-          <MessageSquare className="h-4 w-4" />
-          {label}
+          <MessageSquare className="h-3.5 w-3.5" />
+          <span className="hidden xs:inline sm:inline">{label}</span>
         </>
       )}
     </Button>
