@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatINR } from "@/lib/utils";
 import { Star, MapPin, Shield, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { InquiryForm } from "@/components/vendor/inquiry-form";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,13 @@ export default async function VendorPublicProfilePage({ params }: Props) {
     notFound();
   }
 
-  // Increment view count
+  const { data: media } = await supabase
+    .from("media")
+    .select("*")
+    .eq("vendor_id", vendor.id)
+    .order("sort_order", { ascending: true });
+
+  // Increment view count (non-blocking)
   supabase
     .from("vendor_profiles")
     .update({ view_count: (vendor.view_count || 0) + 1 })
@@ -37,31 +43,61 @@ export default async function VendorPublicProfilePage({ params }: Props) {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-          <Link href="/explore" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Back to Explore
+          <Link
+            href="/explore"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Explore
           </Link>
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-accent-foreground">E</div>
-            <span className="font-semibold">Event<span className="text-accent">Link</span></span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-accent-foreground">
+              E
+            </div>
+            <span className="font-semibold">
+              Event<span className="text-accent">Link</span>
+            </span>
           </Link>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-10">
         <div className="overflow-hidden rounded-3xl border border-border bg-card">
-          <div className="aspect-[21/9] bg-secondary/40 flex items-center justify-center">
-            <span className="text-6xl font-bold text-muted-foreground/20">{vendor.business_name.charAt(0)}</span>
+          {/* Cover */}
+          <div className="aspect-[21/9] bg-secondary/40">
+            {vendor.cover_image_url || (media && media[0]) ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={vendor.cover_image_url || media![0].url}
+                alt={vendor.business_name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <span className="text-6xl font-bold text-muted-foreground/20">
+                  {vendor.business_name.charAt(0)}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="p-6 sm:p-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{vendor.business_name}</h1>
-                  {vendor.verification_status !== "unverified" && <Shield className="h-5 w-5 text-accent" />}
+                  <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                    {vendor.business_name}
+                  </h1>
+                  {vendor.verification_status !== "unverified" && (
+                    <Shield className="h-5 w-5 text-accent" />
+                  )}
                 </div>
+
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{vendor.primary_city}</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    {vendor.primary_city}
+                  </span>
                   {vendor.average_rating > 0 && (
                     <span className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-accent text-accent" />
@@ -69,22 +105,35 @@ export default async function VendorPublicProfilePage({ params }: Props) {
                     </span>
                   )}
                 </div>
+
                 <div className="mt-3 flex flex-wrap gap-2">
                   {(vendor.categories || []).map((cat: string) => (
-                    <span key={cat} className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">{cat}</span>
+                    <span
+                      key={cat}
+                      className="rounded-full bg-secondary px-3 py-1 text-xs font-medium"
+                    >
+                      {cat}
+                    </span>
                   ))}
                 </div>
               </div>
-              <Button size="lg" className="shrink-0">Send Inquiry</Button>
+
+              <div className="w-full lg:w-80">
+                <InquiryForm vendorId={vendor.id} vendorName={vendor.business_name} />
+              </div>
             </div>
 
+            {/* About */}
             {vendor.bio && (
-              <div className="mt-8">
+              <div className="mt-10">
                 <h2 className="text-lg font-semibold">About</h2>
-                <p className="mt-2 text-muted-foreground whitespace-pre-line">{vendor.bio}</p>
+                <p className="mt-2 whitespace-pre-line text-muted-foreground">
+                  {vendor.bio}
+                </p>
               </div>
             )}
 
+            {/* Stats */}
             <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {vendor.years_experience && (
                 <div className="rounded-xl bg-secondary/50 p-4 text-center">
@@ -108,6 +157,29 @@ export default async function VendorPublicProfilePage({ params }: Props) {
               </div>
             </div>
 
+            {/* Portfolio Gallery */}
+            {media && media.length > 0 && (
+              <div className="mt-10">
+                <h2 className="text-lg font-semibold">Portfolio</h2>
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {media.map((item) => (
+                    <div
+                      key={item.id}
+                      className="aspect-square overflow-hidden rounded-xl border border-border"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.url}
+                        alt={item.caption || vendor.business_name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Packages */}
             {vendor.packages && vendor.packages.length > 0 && (
               <div className="mt-10">
                 <h2 className="text-lg font-semibold">Packages</h2>
