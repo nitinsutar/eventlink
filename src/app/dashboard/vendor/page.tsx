@@ -68,6 +68,9 @@ export default async function VendorDashboardPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Link href="/dashboard/vendor/edit">
+              <Button size="sm">Edit Profile</Button>
+            </Link>
             <Link href={`/${vendor.primary_city.toLowerCase().replace(/\s+/g, "-")}/${(vendor.categories?.[0] || "general").toLowerCase().replace(/\s+/g, "-").replace(/\//g, "-")}/${vendor.slug}`}>
               <Button variant="outline" size="sm">View Public Profile</Button>
             </Link>
