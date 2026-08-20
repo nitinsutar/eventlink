@@ -119,7 +119,11 @@ export default async function VendorPublicProfilePage({ params }: Props) {
               </div>
 
               <div className="w-full lg:w-80">
-                <InquiryForm vendorId={vendor.id} vendorName={vendor.business_name} />
+                <InquiryForm
+                  vendorId={vendor.id}
+                  vendorName={vendor.business_name}
+                  vendorCategories={vendor.categories || []}
+                />
               </div>
             </div>
 
